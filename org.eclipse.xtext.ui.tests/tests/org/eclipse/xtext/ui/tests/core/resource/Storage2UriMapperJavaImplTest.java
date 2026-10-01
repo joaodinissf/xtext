@@ -23,6 +23,7 @@ import org.eclipse.core.resources.IStorage;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.jdt.core.IClasspathAttribute;
 import org.eclipse.jdt.core.IClasspathEntry;
@@ -340,6 +341,28 @@ public class Storage2UriMapperJavaImplTest extends Assert {
 			String head = Iterables.getFirst(it.getValue().associatedRoots.keySet(), null);
 			Assert.assertTrue(head, head.startsWith("=testProject/"));
 		});
+	}
+
+	@Test
+	public void testGetStoragesWhileCacheChanges() {
+		URI uri = URI.createPlatformResourceURI("/p/a.indexed", true);
+		IStorage storage = ResourcesPlugin.getWorkspace().getRoot().getFile(new Path("/p/a.indexed"));
+		Storage2UriMapperJavaImpl mapper = new Storage2UriMapperJavaImpl() {
+			{
+				// another thread may change the cache while getStorages iterates it; this root does so from its exists() check
+				PackageFragmentRootData changesCache = new PackageFragmentRootData(null) {
+					@Override
+					public boolean exists() {
+						cachedPackageFragmentRootData.put("added", new PackageFragmentRootData(null));
+						return false;
+					}
+				};
+				changesCache.uri2Storage.put(uri, storage);
+				cachedPackageFragmentRootData.put("changesCache", changesCache);
+				cachedPackageFragmentRootData.put("other", new PackageFragmentRootData(null));
+			}
+		};
+		assertTrue(Iterables.isEmpty(mapper.getStorages(uri)));
 	}
 
 	public void assertBothProjects(int sizeBefore) throws Exception {

@@ -365,10 +365,10 @@ public class Storage2UriMapperJavaImpl implements IStorage2UriMapperJdtExtension
 	/* @NonNull */
 	@Override
 	public Iterable<Pair<IStorage, IProject>> getStorages(/* @NonNull */ URI uri) {
-		// Pessimistic copy of the cachedPackageFragmentRootData
+		// Copy: the loop below runs after the lock is released
 		Collection<PackageFragmentRootData> packageFragmentRootDatas;
 		synchronized(cachedPackageFragmentRootData) {
-			packageFragmentRootDatas = cachedPackageFragmentRootData.values();
+			packageFragmentRootDatas = newArrayList(cachedPackageFragmentRootData.values());
 		}
 		
 		/* 
