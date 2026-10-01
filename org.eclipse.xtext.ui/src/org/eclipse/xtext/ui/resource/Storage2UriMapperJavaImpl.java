@@ -266,6 +266,12 @@ public class Storage2UriMapperJavaImpl implements IStorage2UriMapperJdtExtension
 		}
 		PackageFragmentRootData data = initializeData(root);
 		synchronized (cachedPackageFragmentRootData) {
+			// another thread may have cached the root meanwhile; share its entry instead of overwriting it
+			PackageFragmentRootData cached = cachedPackageFragmentRootData.get(path);
+			if (cached != null && isUpToDate(cached, root)) {
+				cached.addRoot(root);
+				return cached;
+			}
 			cachedPackageFragmentRootData.put(path, data);
 		}
 		return data;
